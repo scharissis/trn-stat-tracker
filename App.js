@@ -2,7 +2,7 @@ import victoryCustomTheme from './victory-theme.js'
 import React from 'react';
 import {ActivityIndicator, Button, FlatList, Image, SectionList, StyleSheet, Text, TextInput, View} from 'react-native';
 import {ScrollView} from 'react-native-gesture-handler';
-import { StackNavigator } from 'react-navigation';
+import { StackNavigator, TabNavigator } from 'react-navigation';
 import { VictoryBar, VictoryChart } from "victory-native";
 
 export default class App extends React.Component {
@@ -51,7 +51,7 @@ class StatsScreen extends React.Component {
   static navigationOptions = ({ navigation }) => {
     const { params } = navigation.state;
     return {
-      title: (params && params.user) ? params.user : 'Stats',
+      title: params.routeName,
     }
   };
 
@@ -110,8 +110,10 @@ class StatsScreen extends React.Component {
 
     const { params } = this.props.navigation.state;
     const user = params ? params.user : null;
-    var soloStats = this.state.dataSource.stats.p2;
-    var bottom75wins = soloStats.matches.valueInt - soloStats.top25.valueInt;
+    var mode = this.props.navigation.state.routeName;
+    var modeMap = {'Solo': 'p2', 'Duo': 'p10', 'Squad': 'p9'};
+    var stats = this.state.dataSource.stats[modeMap[mode]];
+    var bottom75wins = stats.matches.valueInt - stats.top25.valueInt;
 
     if (this.state.fetchError){
       return(
@@ -125,27 +127,27 @@ class StatsScreen extends React.Component {
 
     return (
       <View style={styles.container}>
-        <Text style={{fontSize: 20, fontWeight: 'bold', paddingTop: 40, paddingBottom: 20}}>Solo</Text>
-        <ScrollView style={{flex: 1}}>
+        <Text style={{fontSize: 20, fontWeight: 'bold', paddingTop: 10}}>{user}</Text>
+        <ScrollView style={{flex: 1, paddingTop: 5}}>
           <View style={styles.homeRow}>
             <Text style={{fontWeight: 'bold'}}>TRN Rating:   </Text>
-            <Text>{soloStats.trnRating.value} (Percentile: {soloStats.trnRating.percentile}%)</Text>
+            <Text>{stats.trnRating.value} (Percentile: {stats.trnRating.percentile}%)</Text>
           </View>
           <View style={styles.homeRow}>
             <Text style={{fontWeight: 'bold'}}>Score:   </Text>
-            <Text>{soloStats.score.value} (Percentile: {soloStats.score.percentile}%)</Text>
+            <Text>{stats.score.value} (Percentile: {stats.score.percentile}%)</Text>
           </View>
           <View style={styles.homeRow}>
             <Text style={{fontWeight: 'bold'}}>Matches Played:   </Text>
-            <Text>{soloStats.matches.value} (Percentile: {soloStats.matches.percentile}%)</Text>
+            <Text>{stats.matches.value} (Percentile: {stats.matches.percentile}%)</Text>
           </View>
           <View style={styles.homeRow}>
             <Text style={{fontWeight: 'bold'}}>Wins:   </Text>
-            <Text>Top1: {soloStats.top1.value} | Top3: {soloStats.top3.value} | Top10: {soloStats.top10.value} | Top25: {soloStats.top25.value}</Text>
+            <Text>Top1: {stats.top1.value} | Top3: {stats.top3.value} | Top10: {stats.top10.value} | Top25: {stats.top25.value}</Text>
           </View>
           <View style={styles.homeRow}>
             <Text style={{fontWeight: 'bold'}}>K/D Ratio:   </Text>
-            <Text>{soloStats.kd.value} (Percentile: {soloStats.kd.percentile}%)</Text>
+            <Text>{stats.kd.value} (Percentile: {stats.kd.percentile}%)</Text>
           </View>
 
           <VictoryChart width={350} theme={victoryCustomTheme}>
@@ -153,11 +155,11 @@ class StatsScreen extends React.Component {
               barRatio={1.0}
               labels={(d) => `y: ${d.y}`}
               data = {[
-                { pos: 'Win', num: soloStats.top1.valueInt },
-                { pos: 'Top3', num: soloStats.top3.valueInt },
-                { pos: 'Top5', num: soloStats.top5.valueInt },
-                { pos: 'Top10', num: soloStats.top10.valueInt },
-                { pos: 'Top25', num: soloStats.top25.valueInt },
+                { pos: 'Win', num: stats.top1.valueInt },
+                { pos: 'Top3', num: stats.top3.valueInt },
+                { pos: 'Top5', num: stats.top5.valueInt },
+                { pos: 'Top10', num: stats.top10.valueInt },
+                { pos: 'Top25', num: stats.top25.valueInt },
                 { pos: 'Other', num: bottom75wins },
               ]}
               x="pos" y="num"
@@ -169,6 +171,11 @@ class StatsScreen extends React.Component {
   }
 }
 
+const StatsStack = TabNavigator({
+  Solo: { screen: StatsScreen },
+  Duo: { screen: StatsScreen },
+  Squad: { screen: StatsScreen }
+});
 
 const RootStack = StackNavigator(
   {
@@ -176,7 +183,7 @@ const RootStack = StackNavigator(
       screen: HomeScreen,
     },
     Stats: {
-      screen: StatsScreen,
+      screen: StatsStack,
     },
   },
   {
